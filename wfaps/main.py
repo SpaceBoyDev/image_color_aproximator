@@ -73,7 +73,7 @@ class WPlaceImageGen(QWidget):
             QPushButton, QLabel {
                 padding: 20px;
                 font-weight: bold;
-                font-family: "calibri";
+                font-family: "Wingdings";
             }
             QPushButton {
                 font-size: 50px;
