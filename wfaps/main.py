@@ -1,31 +1,19 @@
+import ctypes
 import sys
+from tkinter.filedialog import askopenfilename
 
-from PyQt5.QtGui import QPixmap, QImage, QColor, QCursor
+from PIL import ImageGrab
+from PyQt5.QtCore import *
+from PyQt5.QtGui import QPixmap, QImage, QColor
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QFrame,
                              QPushButton, QVBoxLayout, QHBoxLayout,
                              QGridLayout, QSizePolicy)
-from PyQt5.QtCore import *
-from PyQt5.uic.properties import QtCore
-
-#COLOR PICKERS
-#from tkinter import colorchooser
-from vcolorpicker import *
-from CTkColorPicker import *
-from pynput import keyboard
-from pynput import mouse
-from PIL import Image, ImageGrab
-from dash import Dash, html, Input, Output, callback
-
-from tkinter.filedialog import askopenfilename
-from tkinter import *
-
 from colormath.color_conversions import convert_color
 from colormath.color_diff import *
 from colormath.color_objects import LabColor, sRGBColor, XYZColor
 from numpy import *
-import ctypes
-from colormath import *
-
+from pynput import keyboard
+from pynput import mouse
 
 wplace_colors = [
     [0, 0, 0],
@@ -68,6 +56,7 @@ SetCursor = user32.SetCursor
 IDC_ARROW = 32512
 IDC_WAIT = 32514
 
+
 class WPlaceImageGen(QWidget):
     def __init__(self):
         super().__init__()
@@ -90,6 +79,7 @@ class WPlaceImageGen(QWidget):
         self.color_buttons = []
         self.add_color_button = QPushButton("+", self)
 
+        self.og_img_name = None
         self.og_image = QImage()
         self.new_image = QImage()
         self.og_image_label = QLabel(self)
@@ -102,7 +92,7 @@ class WPlaceImageGen(QWidget):
         size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         general_layout = QVBoxLayout()
         horizontal_layout = QHBoxLayout()
-        #general_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # general_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.setLayout(general_layout)
         general_layout.addLayout(horizontal_layout)
@@ -110,13 +100,13 @@ class WPlaceImageGen(QWidget):
 
         v_image_box = QVBoxLayout()
         horizontal_layout.addLayout(v_image_box)
-        #v_image_box.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        # v_image_box.setAlignment(Qt.AlignmentFlag.AlignLeft)
         v_image_box.addWidget(self.og_image_label)
         v_image_box.addWidget(self.new_image_label)
 
         self.v_color_box.addLayout(self.color_grid)
         self.color_grid.addWidget(self.add_color_button)
-        #self.v_color_box.setSpacing(30)
+        # self.v_color_box.setSpacing(30)
         self.v_color_box.setAlignment(Qt.AlignmentFlag.AlignTrailing)
         horizontal_layout.addLayout(self.v_color_box)
 
@@ -126,7 +116,7 @@ class WPlaceImageGen(QWidget):
         self.og_image_label.setFrameShadow(QFrame.Sunken)
         self.og_image_label.setLineWidth(3)
 
-        #self.new_image_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        # self.new_image_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.new_image_label.setScaledContents(True)
         self.new_image_label.setMaximumSize(350, 350)
         self.new_image_label.setFrameShape(QFrame.Panel)
@@ -141,7 +131,6 @@ class WPlaceImageGen(QWidget):
         h_button_box.addWidget(self.copy_image_button)
         h_button_box.addWidget(self.save_image_button)
         h_button_box.addWidget(self.import_wplace_button)
-
 
         self.setStyleSheet("""
             QPushButton, QLabel {
@@ -172,6 +161,7 @@ class WPlaceImageGen(QWidget):
 
     def select_image(self):
         img = askopenfilename()
+        self.og_img_name = img
         self.og_image.load(img)
         self.og_image_label.setPixmap(QPixmap(img))
 
@@ -180,8 +170,8 @@ class WPlaceImageGen(QWidget):
             return
         pixels = []
         self.new_image = QImage(self.og_image.width(),
-                           self.og_image.height(),
-                           QImage.Format.Format_ARGB32)
+                                self.og_image.height(),
+                                QImage.Format.Format_ARGB32)
 
         for y in range(self.og_image.height()):
             for x in range(self.og_image.width()):
@@ -199,7 +189,6 @@ class WPlaceImageGen(QWidget):
 
                 final_color = QColor(r, g, b)
                 self.new_image.setPixelColor(x, y, final_color)
-
 
         self.og_image_label.setPixmap(QPixmap.fromImage(self.og_image))
         self.new_image_label.setPixmap(QPixmap.fromImage(self.new_image))
@@ -226,7 +215,8 @@ class WPlaceImageGen(QWidget):
         return closest_color, delta_e_min
 
     def save_image(self):
-        self.new_image.save("new_image.png")
+        if not self.new_image.isNull():
+            self.new_image.save(f"{self.og_img_name}_approximated.png")
 
     def add_color(self):
 
@@ -238,8 +228,8 @@ class WPlaceImageGen(QWidget):
         columna = len(self.colors) % self.max_cols
         self.color_grid.addWidget(self.color_buttons[-1], columna, fila)
 
-        self.colors.append(self.rgb_to_lab((255,255,255)))
-        #self.colors.append((255,255,255))
+        self.colors.append(self.rgb_to_lab((255, 255, 255)))
+        # self.colors.append((255,255,255))
 
         fila = (len(self.colors) // self.max_cols)
         columna = len(self.colors) % self.max_cols
@@ -290,6 +280,7 @@ class WPlaceImageGen(QWidget):
         if key == keyboard.Key.esc:
             mlstnr.stop()
             return False
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
