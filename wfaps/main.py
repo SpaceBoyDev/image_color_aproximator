@@ -9,7 +9,6 @@ from PyQt5.uic.properties import QtCore
 
 #COLOR PICKERS
 #from tkinter import colorchooser
-from colorpicker import *
 from vcolorpicker import *
 from CTkColorPicker import *
 from pynput import keyboard
@@ -28,6 +27,40 @@ import ctypes
 from colormath import *
 
 
+wplace_colors = [
+    [0, 0, 0],
+    [60, 60, 60],
+    [120, 120, 120],
+    [210, 210, 210],
+    [255, 255, 255],
+    [96, 0, 24],
+    [237, 28, 36],
+    [255, 127, 39],
+    [246, 170, 9],
+    [249, 221, 59],
+    [255, 250, 188],
+    [14, 185, 104],
+    [19, 230, 123],
+    [135, 255, 94],
+    [12, 129, 110],
+    [16, 174, 166],
+    [19, 225, 190],
+    [40, 80, 158],
+    [64, 147, 228],
+    [96, 247, 242],
+    [107, 80, 246],
+    [153, 177, 251],
+    [120, 12, 153],
+    [170, 56, 185],
+    [224, 159, 249],
+    [203, 0, 122],
+    [236, 31, 128],
+    [243, 141, 169],
+    [104, 70, 52],
+    [149, 104, 42],
+    [248, 178, 119],
+]
+
 user32 = ctypes.windll.user32
 LoadCursor = user32.LoadCursorW
 SetCursor = user32.SetCursor
@@ -42,6 +75,9 @@ class WPlaceImageGen(QWidget):
         self.select_image_button = QPushButton("Select Image", self)
         self.copy_image_button = QPushButton("Copy Image", self)
         self.save_image_button = QPushButton("Save Image", self)
+        self.import_wplace_button = QPushButton("Import wplace basic colors", self)
+
+        self.colors_to_save = []
 
         self.v_color_box = QVBoxLayout()
         self.color_grid = QGridLayout()
@@ -104,6 +140,7 @@ class WPlaceImageGen(QWidget):
         h_button_box.addWidget(self.select_image_button)
         h_button_box.addWidget(self.copy_image_button)
         h_button_box.addWidget(self.save_image_button)
+        h_button_box.addWidget(self.import_wplace_button)
 
 
         self.setStyleSheet("""
@@ -122,10 +159,16 @@ class WPlaceImageGen(QWidget):
         self.select_image_button.clicked.connect(self.select_image)
         self.copy_image_button.clicked.connect(self.copy_image)
         self.save_image_button.clicked.connect(self.save_image)
+        self.import_wplace_button.clicked.connect(lambda _, b=wplace_colors: self.import_colors(b))
 
         self.add_color_button.clicked.connect(self.add_color)
         self.add_color_button.setStyleSheet("""
             font-size: 30px""")
+
+    def import_colors(self, colors):
+        for i, color in enumerate(colors):
+            self.add_color()
+            self.change_selected_color_special(i, color)
 
     def select_image(self):
         img = askopenfilename()
@@ -136,12 +179,15 @@ class WPlaceImageGen(QWidget):
         pixels = []
         self.new_image = QImage(self.og_image.width(),
                            self.og_image.height(),
-                           QImage.Format.Format_RGBA8888)
+                           QImage.Format.Format_ARGB32)
 
         for y in range(self.og_image.height()):
             for x in range(self.og_image.width()):
                 color = QColor(self.og_image.pixelColor(x, y))
-
+                if color.alpha() == 0:
+                    print(f"es alpha :3 x:{x} y:{y}")
+                    self.new_image.setPixelColor(x, y, color)
+                    continue
                 closest_color, delta = self.find_closest_color(
                     self.rgb_to_lab((color.red(), color.green(), color.blue())), self.colors)
 
@@ -187,8 +233,6 @@ class WPlaceImageGen(QWidget):
         self.color_buttons.append(QPushButton(""))
         self.color_buttons[-1].setStyleSheet("font-size: 30px")
         self.color_buttons[-1].clicked.connect(lambda _, b=len(self.color_buttons) - 1: self.change_selected_color(b))
-        self.color_buttons[-1].setStyleSheet("""
-            font-size: 30px""")
 
         fila = (len(self.colors) // self.max_cols)
         columna = len(self.colors) % self.max_cols
@@ -200,13 +244,24 @@ class WPlaceImageGen(QWidget):
         fila = (len(self.colors) // self.max_cols)
         columna = len(self.colors) % self.max_cols
         self.color_grid.addWidget(self.add_color_button, columna, fila)
+        self.colors_to_save.append([255, 255, 255])
         print(self.colors[-1])
+
+    def change_selected_color_special(self, index, color):
+        self.color_buttons[index].setStyleSheet(f"font-size: 30px;"
+                                                f"background-color:rgb({color[0]}, {color[1]}, {color[2]})")
+        self.colors[index] = self.rgb_to_lab(color)
+        self.colors_to_save[index] = color
 
     def change_selected_color(self, index):
         color = self.pick_color()
-        self.color_buttons[index].setStyleSheet(f"background-color:rgb("
-                                             f"{color[0]},{color[1]}, {color[2]})")
+        self.color_buttons[index].setStyleSheet(f"font-size: 30px;"
+                                                f"background-color:rgb({color[0]}, {color[1]}, {color[2]})")
         self.colors[index] = self.rgb_to_lab(color)
+        self.colors_to_save[index] = color
+        print("Colorinchis")
+        for current_color in self.colors_to_save:
+            print(f"[{current_color[0]}, {current_color[1]}, {current_color[2]}],")
 
     def set_cursor(self, cursor_id):
         cursor = LoadCursor(None, cursor_id)
