@@ -1,2 +1,3 @@
 ﻿wfaps/dist
 wfaps/build
+*.spec
