@@ -176,6 +176,8 @@ class WPlaceImageGen(QWidget):
         self.og_image_label.setPixmap(QPixmap(img))
 
     def copy_image(self):
+        if len(self.colors) < 1 or self.og_image.isNull():
+            return
         pixels = []
         self.new_image = QImage(self.og_image.width(),
                            self.og_image.height(),
@@ -185,14 +187,12 @@ class WPlaceImageGen(QWidget):
             for x in range(self.og_image.width()):
                 color = QColor(self.og_image.pixelColor(x, y))
                 if color.alpha() == 0:
-                    print(f"es alpha :3 x:{x} y:{y}")
                     self.new_image.setPixelColor(x, y, color)
                     continue
                 closest_color, delta = self.find_closest_color(
                     self.rgb_to_lab((color.red(), color.green(), color.blue())), self.colors)
 
                 srgb = self.lab_to_rgb(closest_color)
-                #print(f"final color -> {srgb}")
                 r = int(round(srgb.rgb_r * 255))
                 g = int(round(srgb.rgb_g * 255))
                 b = int(round(srgb.rgb_b * 255))
@@ -245,7 +245,6 @@ class WPlaceImageGen(QWidget):
         columna = len(self.colors) % self.max_cols
         self.color_grid.addWidget(self.add_color_button, columna, fila)
         self.colors_to_save.append([255, 255, 255])
-        print(self.colors[-1])
 
     def change_selected_color_special(self, index, color):
         self.color_buttons[index].setStyleSheet(f"font-size: 30px;"
@@ -259,9 +258,6 @@ class WPlaceImageGen(QWidget):
                                                 f"background-color:rgb({color[0]}, {color[1]}, {color[2]})")
         self.colors[index] = self.rgb_to_lab(color)
         self.colors_to_save[index] = color
-        print("Colorinchis")
-        for current_color in self.colors_to_save:
-            print(f"[{current_color[0]}, {current_color[1]}, {current_color[2]}],")
 
     def set_cursor(self, cursor_id):
         cursor = LoadCursor(None, cursor_id)
@@ -271,7 +267,6 @@ class WPlaceImageGen(QWidget):
         app.setOverrideCursor(Qt.CursorShape.WaitCursor)
         with mouse.Listener(on_click=self.onClick) as self.mouselstnr:
             self.mouselstnr.join()
-        print(self.color_picked)
         app.restoreOverrideCursor()
         return self.color_picked
 
